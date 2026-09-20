@@ -126,7 +126,7 @@
                 <div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">E</div>
                 <div>
                     <span class="text-base font-bold text-gray-900 block leading-tight">EasyTalk</span>
-                    <span class="text-[11px] text-brand-700 font-semibold tracking-wide">Платформа учебных материалов</span>
+                    <span class="text-[11px] text-brand-700 font-semibold tracking-wide">учебные материалы</span>
                 </div>
             </div>
         </div>
@@ -135,31 +135,26 @@
     <!-- Основной контент -->
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        <div class="mb-8">
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Добро пожаловать в EasyTalk! </h1>
-            <p class="text-xs sm:text-sm text-gray-600 mt-1 font-medium">Выберите нужный раздел или воспользуйтесь поиском ниже.</p>
+        <!-- Аккуратный зеленый блок приветствия без смайлика -->
+        <div class="bg-gradient-to-r from-brand-50 to-emerald-50 border border-brand-200 rounded-2xl p-6 mb-8 shadow-xs">
+            <h1 class="text-lg sm:text-xl font-bold text-gray-900 mb-1">Добро пожаловать в EasyTalk!</h1>
+            <p class="text-xs sm:text-sm text-gray-600 font-medium">Выберите нужный раздел для просмотра материалов.</p>
         </div>
 
         <nav id="breadcrumbs" class="flex items-center space-x-2 text-sm text-gray-500 mb-4">
             <span class="cursor-pointer hover:text-brand-600 font-medium text-gray-800" onclick="goHome()">Все папки</span>
         </nav>
 
-        <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-                <h2 id="sectionTitle" class="text-xl font-bold text-gray-900">Папки презентаций</h2>
-                <p class="text-xs text-gray-600 mt-0.5 font-medium">Всего элементов: <span id="counterValue" class="text-brand-700 font-bold">0</span></p>
-            </div>
-
-            <div class="w-full sm:w-64">
-                <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Поиск по материалам..." class="w-full px-3.5 py-2 bg-white border border-gray-300 rounded-xl text-xs focus:outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600 text-gray-800 placeholder-gray-400 shadow-xs">
-            </div>
+        <div class="mb-6">
+            <h2 id="sectionTitle" class="text-xl font-bold text-gray-900">Папки презентаций</h2>
+            <p class="text-xs text-gray-600 mt-0.5 font-medium">Всего элементов: <span id="counterValue" class="text-brand-700 font-bold">0</span></p>
         </div>
 
         <div id="mainGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
 
         <div id="emptyState" class="hidden text-center py-12">
-            <h3 class="text-base font-medium text-gray-900 mb-1">Ничего не найдено</h3>
-            <p class="text-xs text-gray-500">Попробуйте изменить запрос в поиске.</p>
+            <h3 class="text-base font-medium text-gray-900 mb-1">Здесь пока пусто</h3>
+            <p class="text-xs text-gray-500">В этой папке нет материалов.</p>
         </div>
     </main>
 
@@ -257,7 +252,6 @@
 
         let folders = defaultFolders;
         let currentFolderId = null;
-        let searchQuery = "";
         let currentPresList = [];
         let currentPresIndex = 0;
         let currentPdfDoc = null;
@@ -267,33 +261,19 @@
 
         function goHome() {
             currentFolderId = null;
-            document.getElementById('searchInput').value = "";
-            searchQuery = "";
             render();
         }
 
         function openFolder(id) {
             currentFolderId = id;
-            document.getElementById('searchInput').value = "";
-            searchQuery = "";
-            render();
-        }
-
-        function handleSearch(query) {
-            searchQuery = query.toLowerCase().trim();
             render();
         }
 
         function viewPres(id) {
-            let list = [];
-            if (currentFolderId === null) {
-                folders.forEach(f => list.push(...f.presentations));
-            } else {
-                const folder = folders.find(f => f.id === currentFolderId);
-                if (folder) list = folder.presentations;
-            }
+            const folder = folders.find(f => f.id === currentFolderId);
+            if (!folder) return;
 
-            currentPresList = list;
+            currentPresList = folder.presentations;
             currentPresIndex = currentPresList.findIndex(p => p.id === id);
 
             showCurrentPresentation();
@@ -474,48 +454,6 @@
             if (!grid) return;
             grid.innerHTML = '';
 
-            if (currentFolderId === null && searchQuery !== "") {
-                sectionTitle.textContent = 'Результаты поиска';
-                breadcrumbs.innerHTML = `<span class="cursor-pointer hover:text-brand-600 font-medium" onclick="goHome()">Все папки</span> <span class="text-gray-300">/</span> <span class="text-gray-800">${escapeHtml(searchQuery)}</span>`;
-
-                let matched = [];
-                folders.forEach(f => {
-                    f.presentations.forEach(p => {
-                        if (p.title.toLowerCase().includes(searchQuery)) {
-                            matched.push(p);
-                        }
-                    });
-                });
-
-                counterValue.textContent = matched.length;
-                if (matched.length === 0) {
-                    emptyState.classList.remove('hidden');
-                    return;
-                }
-                emptyState.classList.add('hidden');
-
-                matched.forEach(pres => {
-                    const card = document.createElement('div');
-                    card.className = 'bg-white rounded-xl p-4 border border-gray-200 hover:border-brand-500 transition shadow-2xs flex flex-col justify-between';
-                    card.innerHTML = `
-                        <div>
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-[10px] font-semibold px-2 py-0.5 bg-brand-50 text-brand-700 rounded">PDF</span>
-                                <span class="text-[11px] text-gray-400">${escapeHtml(pres.date || '')}</span>
-                            </div>
-                            <h3 class="font-semibold text-gray-900 text-sm mb-1">${escapeHtml(pres.title)}</h3>
-                            <p class="text-xs text-gray-500 mb-3">${escapeHtml(pres.desc || '')}</p>
-                        </div>
-                        <div class="pt-3 border-t border-gray-100 flex items-center justify-between">
-                            <span class="text-[11px] text-gray-400">${escapeHtml(pres.fileSize || '')}</span>
-                            <button onclick="viewPres(${pres.id})" class="px-3 py-1 bg-brand-600 hover:bg-brand-700 text-white text-xs font-medium rounded-lg transition">Открыть</button>
-                        </div>
-                    `;
-                    grid.appendChild(card);
-                });
-                return;
-            }
-
             if (currentFolderId === null) {
                 sectionTitle.textContent = 'Папки презентаций';
                 counterValue.textContent = folders.length;
@@ -557,11 +495,7 @@
                 <span class="text-gray-800">${escapeHtml(folder.name)}</span>
             `;
 
-            let presentations = folder.presentations || [];
-            if (searchQuery !== "") {
-                presentations = presentations.filter(p => p.title.toLowerCase().includes(searchQuery));
-            }
-
+            const presentations = folder.presentations || [];
             counterValue.textContent = presentations.length;
 
             if (presentations.length === 0) {
