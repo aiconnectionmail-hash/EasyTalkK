@@ -140,9 +140,6 @@
                     <span class="text-[11px] font-medium text-brand-600 tracking-wide">курсы английского языка</span>
                 </div>
             </div>
-            <button onclick="openFolderModal()" class="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-xl transition">
-                📁 Создать папку
-            </button>
         </div>
     </header>
 
@@ -165,7 +162,7 @@
         <div id="emptyState" class="hidden text-center py-16">
             <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">📂</div>
             <h3 id="emptyTitle" class="text-lg font-medium text-gray-900 mb-1">Здесь пока пусто</h3>
-            <p id="emptyDesc" class="text-sm text-gray-500 mb-4">Создайте первую папку, чтобы начать работу.</p>
+            <p id="emptyDesc" class="text-sm text-gray-500 mb-4">В этой папке пока нет презентаций.</p>
         </div>
     </main>
 
@@ -173,26 +170,6 @@
     <footer class="bg-white/90 backdrop-blur-sm border-t border-gray-200 py-6 text-center text-sm text-gray-500 relative z-10">
         <p>&copy; 2026 EasyTalk. Все права защищены.</p>
     </footer>
-
-    <!-- Модальное окно: Создать папку -->
-    <div id="folderModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold text-gray-900">📁 Создать новую папку</h3>
-                <button onclick="closeFolderModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg">✕</button>
-            </div>
-            <form onsubmit="handleCreateFolder(event)" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Название папки</label>
-                    <input type="text" id="folderNameInput" required placeholder="Например: Intermediate" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-                </div>
-                <div class="flex justify-end space-x-3 pt-2">
-                    <button type="button" onclick="closeFolderModal()" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl">Отмена</button>
-                    <button type="submit" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl">Создать</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <!-- Модальное окно встроенного плеера с кнопкой Показ -->
     <div id="viewModal" class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-6 hidden">
@@ -253,7 +230,7 @@
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         }
 
-        // Прямая ссылка на твой файл Lesson 1_compressed.pdf из репозитория
+        // Список папок и уроков, завязанный на файлы в GitHub
         const defaultFolders = [
             {
                 id: 1,
@@ -268,23 +245,24 @@
                         url: "https://raw.githubusercontent.com/aiconnectionmail-hash/EasyTalkK/main/Lesson%201_compressed.pdf"
                     }
                 ]
+            },
+            {
+                id: 2,
+                name: "Elementary",
+                presentations: [
+                    {
+                        id: 201,
+                        title: "lesson 4",
+                        desc: "Презентация урока",
+                        fileSize: "PDF документ",
+                        date: "2026",
+                        url: "https://raw.githubusercontent.com/aiconnectionmail-hash/EasyTalkK/main/Lesson%204.pdf"
+                    }
+                ]
             }
         ];
 
-        let folders = [];
-        try {
-            const saved = localStorage.getItem('easytalk_folders');
-            // Принудительно сбрасываем старый локалсторадж, если там не было beginner папки
-            if (!saved || !saved.includes('beginner')) {
-                folders = defaultFolders;
-                localStorage.setItem('easytalk_folders', JSON.stringify(defaultFolders));
-            } else {
-                folders = JSON.parse(saved);
-            }
-        } catch(e) {
-            folders = defaultFolders;
-        }
-
+        let folders = defaultFolders;
         let currentFolderId = null;
         let currentPresList = [];
         let currentPresIndex = 0;
@@ -301,41 +279,6 @@
         function openFolder(id) {
             currentFolderId = id;
             render();
-        }
-
-        function openFolderModal() { document.getElementById('folderModal').classList.remove('hidden'); }
-        function closeFolderModal() {
-            document.getElementById('folderModal').classList.add('hidden');
-            document.getElementById('folderNameInput').value = '';
-        }
-
-        function handleCreateFolder(event) {
-            event.preventDefault();
-            const name = document.getElementById('folderNameInput').value.trim();
-            if (!name) return;
-            folders.push({ id: Date.now(), name: name, presentations: [] });
-            saveAndRender();
-            closeFolderModal();
-        }
-
-        function deleteFolder(id, event) {
-            event.stopPropagation();
-            if (confirm('Удалить эту папку?')) {
-                folders = folders.filter(f => f.id !== id);
-                if (currentFolderId === id) currentFolderId = null;
-                saveAndRender();
-            }
-        }
-
-        function deletePres(id, event) {
-            event.stopPropagation();
-            if (confirm('Удалить эту презентацию?')) {
-                const folder = folders.find(f => f.id === currentFolderId);
-                if (folder) {
-                    folder.presentations = folder.presentations.filter(p => p.id !== id);
-                    saveAndRender();
-                }
-            }
         }
 
         // --- Запуск плеера ---
@@ -380,7 +323,7 @@
                 container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center px-6">
                     <div style="font-size:48px; margin-bottom:12px;">⚠️</div>
                     <p class="text-white font-semibold text-sm">Не удалось загрузить файл</p>
-                    <p class="text-gray-400 text-xs mt-2">Проверьте интернет-соединение</p>
+                    <p class="text-gray-400 text-xs mt-2">Проверьте название файла и прямую ссылку</p>
                 </div>`;
                 updateSlideCounter();
             }
@@ -509,15 +452,6 @@
             currentRenderToken++;
         }
 
-        function saveAndRender() {
-            try {
-                localStorage.setItem('easytalk_folders', JSON.stringify(folders));
-            } catch(e) {
-                alert('Ошибка сохранения!');
-            }
-            render();
-        }
-
         // --- Отрисовка интерфейса папок ---
         function escapeHtml(text) {
             if (!text) return '';
@@ -542,8 +476,6 @@
 
                 if (folders.length === 0) {
                     emptyState.classList.remove('hidden');
-                    document.getElementById('emptyTitle').textContent = 'Нет папок';
-                    document.getElementById('emptyDesc').textContent = 'Создайте папку кнопкой выше.';
                     return;
                 }
                 emptyState.classList.add('hidden');
@@ -560,7 +492,6 @@
                                 <p class="text-xs text-gray-400 mt-0.5">${folder.presentations ? folder.presentations.length : 0} презентаций</p>
                             </div>
                         </div>
-                        <button onclick="deleteFolder(${folder.id}, event)" class="p-2 text-gray-400 hover:text-red-500 rounded-lg transition" title="Удалить">🗑️</button>
                     `;
                     grid.appendChild(card);
                 });
@@ -580,8 +511,6 @@
 
             if (!folder.presentations || folder.presentations.length === 0) {
                 emptyState.classList.remove('hidden');
-                document.getElementById('emptyTitle').textContent = 'В этой папке пусто';
-                document.getElementById('emptyDesc').textContent = 'Здесь пока нет презентаций.';
                 return;
             }
             emptyState.classList.add('hidden');
@@ -602,7 +531,6 @@
                         <span class="text-xs text-gray-400">${escapeHtml(pres.fileSize || '')}</span>
                         <div class="flex items-center space-x-2">
                             <button onclick="viewPres(${pres.id})" class="px-4 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg transition shadow-sm cursor-pointer">Открыть 🚀</button>
-                            <button onclick="deletePres(${pres.id}, event)" class="p-1.5 text-gray-400 hover:text-red-500 rounded-lg transition" title="Удалить">🗑️</button>
                         </div>
                     </div>
                 `;
