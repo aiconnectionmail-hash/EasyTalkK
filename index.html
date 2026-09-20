@@ -253,7 +253,7 @@
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         }
 
-        // Точное имя файла с учетом пробела и регистра
+        // Прямая ссылка на твой файл Lesson 1_compressed.pdf из репозитория
         const defaultFolders = [
             {
                 id: 1,
@@ -262,10 +262,10 @@
                     {
                         id: 101,
                         title: "lesson 1",
-                        desc: "Презентация урока из репозитория",
+                        desc: "Презентация урока",
                         fileSize: "PDF документ",
                         date: "2026",
-                        url: "./Lesson 1_compressed.pdf"
+                        url: "https://raw.githubusercontent.com/aiconnectionmail-hash/EasyTalkK/main/Lesson%201_compressed.pdf"
                     }
                 ]
             }
@@ -274,7 +274,13 @@
         let folders = [];
         try {
             const saved = localStorage.getItem('easytalk_folders');
-            folders = saved ? JSON.parse(saved) : defaultFolders;
+            // Принудительно сбрасываем старый локалсторадж, если там не было beginner папки
+            if (!saved || !saved.includes('beginner')) {
+                folders = defaultFolders;
+                localStorage.setItem('easytalk_folders', JSON.stringify(defaultFolders));
+            } else {
+                folders = JSON.parse(saved);
+            }
         } catch(e) {
             folders = defaultFolders;
         }
@@ -374,7 +380,7 @@
                 container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center px-6">
                     <div style="font-size:48px; margin-bottom:12px;">⚠️</div>
                     <p class="text-white font-semibold text-sm">Не удалось загрузить файл</p>
-                    <p class="text-gray-400 text-xs mt-2">Проверьте, лежит ли Lesson 1_compressed.pdf в корне репозитория</p>
+                    <p class="text-gray-400 text-xs mt-2">Проверьте интернет-соединение</p>
                 </div>`;
                 updateSlideCounter();
             }
