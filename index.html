@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>EasyTalk — Платформа презентаций</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- PDF.js для отрисовки слайдов в полноэкранном плеере -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .bg-blob {
+            position: fixed;
+            border-radius: 9999px;
+            filter: blur(90px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+        /* Fullscreen player styling */
+        #playerBox:fullscreen,
+        #playerBox:-webkit-full-screen {
+            width: 100vw;
+            height: 100vh;
+            max-width: 100vw;
+            border-radius: 0;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        #viewerContainer { scrollbar-width: thin; }
+        #pdfSpinner {
+            border: 3px solid rgba(255,255,255,0.2);
+            border-top-color: #10b981;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Элементы управления плеером */
+        .page-nav-btn, .slide-counter, .exit-present-btn {
+            position: absolute;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+            z-index: 20;
+            pointer-events: none;
+        }
+        #viewerWrap.controls-visible .page-nav-btn,
+        #viewerWrap.controls-visible .slide-counter,
+        #viewerWrap.controls-visible .exit-present-btn {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .page-nav-btn {
+            top: 50%;
+            transform: translateY(-50%);
+            width: 48px;
+            height: 48px;
+            border-radius: 9999px;
+            background: rgba(17,24,39,0.55);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+        }
+        .page-nav-btn:hover { background: rgba(17,24,39,0.8); }
+        .page-nav-btn[disabled] { display: none; }
+        .slide-counter {
+            bottom: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(17,24,39,0.55);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 9999px;
+        }
+        .exit-present-btn {
+            top: 14px;
+            right: 14px;
+            width: 36px;
+            height: 36px;
+            border-radius: 9999px;
+            background: rgba(17,24,39,0.55);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            display: none;
+        }
+
+        #playerBox.presenting { border-radius: 0; border: none; }
+        #playerBox.presenting #playerHeader,
+        #playerBox.presenting #playerFooterNav { display: none !important; }
+        #playerBox.presenting .exit-present-btn { display: flex; align-items: center; justify-content: center; }
+
+        #viewerContainer canvas {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col relative">
+
+    <div class="bg-blob w-[420px] h-[420px] bg-brand-100 opacity-60 -top-32 -right-40"></div>
+    <div class="bg-blob w-[360px] h-[360px] bg-brand-50 opacity-70 bottom-0 -left-32"></div>
+
+    <!-- Шапка сайта -->
+    <header class="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative z-10">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="goHome()">
+                <div class="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center text-white font-bold text-xl shadow-md">E</div>
+                <div class="leading-tight">
+                    <span class="text-xl font-bold tracking-tight text-gray-900 block">Easy<span class="text-brand-600">Talk</span></span>
+                    <span class="text-[11px] font-medium text-brand-600 tracking-wide">курсы английского языка</span>
+                </div>
+            </div>
+            <button onclick="openFolderModal()" class="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-xl transition">
+                📁 Создать папку
+            </button>
+        </div>
+    </header>
+
+    <!-- Основной контент -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+        <nav id="breadcrumbs" class="flex items-center space-x-2 text-sm text-gray-500 mb-6">
+            <span class="cursor-pointer hover:text-brand-600 font-medium text-gray-800" onclick="goHome()">Все папки</span>
+        </nav>
+
+        <div class="mb-6">
+            <p class="text-xs font-semibold text-brand-600 uppercase tracking-wider mb-1">EasyTalk · курсы английского языка</p>
+            <div class="flex items-center justify-between">
+                <h1 id="sectionTitle" class="text-2xl font-bold text-gray-900">Папки презентаций</h1>
+                <span class="text-sm text-gray-500">Всего: <span id="counterValue" class="font-semibold text-gray-800">0</span></span>
+            </div>
+        </div>
+
+        <div id="mainGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+        <div id="emptyState" class="hidden text-center py-16">
+            <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">📂</div>
+            <h3 id="emptyTitle" class="text-lg font-medium text-gray-900 mb-1">Здесь пока пусто</h3>
+            <p id="emptyDesc" class="text-sm text-gray-500 mb-4">Создайте первую папку, чтобы начать работу.</p>
+        </div>
+    </main>
+
+    <!-- Футер -->
+    <footer class="bg-white/90 backdrop-blur-sm border-t border-gray-200 py-6 text-center text-sm text-gray-500 relative z-10">
+        <p>&copy; 2026 EasyTalk. Все права защищены.</p>
+    </footer>
+
+    <!-- Модальное окно: Создать папку -->
+    <div id="folderModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-900">📁 Создать новую папку</h3>
+                <button onclick="closeFolderModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg">✕</button>
+            </div>
+            <form onsubmit="handleCreateFolder(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Название папки</label>
+                    <input type="text" id="folderNameInput" required placeholder="Например: Intermediate" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeFolderModal()" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl">Отмена</button>
+                    <button type="submit" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно встроенного плеера с кнопкой Показ -->
+    <div id="viewModal" class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-6 hidden">
+        <div id="playerBox" class="bg-gray-900 rounded-2xl max-w-5xl w-full h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-gray-800">
+            
+            <!-- Шапка плеера -->
+            <div id="playerHeader" class="bg-gray-800 px-6 py-4 flex items-center justify-between border-b border-gray-700">
+                <div class="min-w-0">
+                    <h3 id="viewTitle" class="text-base font-bold text-white truncate"></h3>
+                    <p id="viewDesc" class="text-xs text-gray-400 mt-0.5 truncate"></p>
+                </div>
+                <div class="flex items-center space-x-3 flex-shrink-0">
+                    <button onclick="toggleFullscreen()" class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-xs font-semibold rounded-xl transition inline-flex items-center shadow-sm">
+                        ⛶ Показ
+                    </button>
+                    <a id="viewDownloadBtn" download target="_blank" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl transition inline-flex items-center shadow-sm">
+                        Скачать файл 📥
+                    </a>
+                    <button onclick="closeViewModal()" class="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-gray-700 transition">✕</button>
+                </div>
+            </div>
+
+            <!-- Область отображения слайда -->
+            <div id="viewerWrap" class="flex-grow bg-gray-950 relative flex items-center justify-center overflow-hidden">
+                <div id="viewerContainer" class="w-full h-full flex items-center justify-center p-2"></div>
+
+                <button id="pagePrevBtn" onclick="prevPage()" class="page-nav-btn" style="left:14px;" title="Предыдущий слайд">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <button id="pageNextBtn" onclick="nextPage()" class="page-nav-btn" style="right:14px;" title="Следующий слайд">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+
+                <div id="slideCounter" class="slide-counter">1 / 1</div>
+                <button id="exitPresentBtn" onclick="toggleFullscreen()" class="exit-present-btn" title="Выйти из показа">✕</button>
+            </div>
+
+            <!-- Нижняя панель навигации по папке -->
+            <div id="playerFooterNav" class="bg-gray-800 px-6 py-3 flex items-center justify-between border-t border-gray-700">
+                <div class="text-xs text-gray-400">Навигация по папке</div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="prevPresInFolder()" class="w-10 h-10 rounded-xl bg-gray-700 hover:bg-gray-600 text-white flex items-center justify-center transition shadow-md" title="Предыдущая презентация">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <span id="pageIndicator" class="text-xs font-semibold text-gray-300 min-w-[70px] text-center">1 из 1</span>
+                    <button onclick="nextPresInFolder()" class="w-10 h-10 rounded-xl bg-gray-700 hover:bg-gray-600 text-white flex items-center justify-center transition shadow-md" title="Следующая презентация">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+                <div class="text-xs text-gray-400">EasyTalk Viewer</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        if (window['pdfjsLib']) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        // Точное имя файла с учетом пробела и регистра
+        const defaultFolders = [
+            {
+                id: 1,
+                name: "beginner",
+                presentations: [
+                    {
+                        id: 101,
+                        title: "lesson 1",
+                        desc: "Презентация урока из репозитория",
+                        fileSize: "PDF документ",
+                        date: "2026",
+                        url: "./Lesson 1_compressed.pdf"
+                    }
+                ]
+            }
+        ];
+
+        let folders = [];
+        try {
+            const saved = localStorage.getItem('easytalk_folders');
+            folders = saved ? JSON.parse(saved) : defaultFolders;
+        } catch(e) {
+            folders = defaultFolders;
+        }
+
+        let currentFolderId = null;
+        let currentPresList = [];
+        let currentPresIndex = 0;
+        let currentPdfDoc = null;
+        let currentPageNum = 1;
+        let totalPagesInFile = 1;
+        let currentRenderToken = 0;
+
+        function goHome() {
+            currentFolderId = null;
+            render();
+        }
+
+        function openFolder(id) {
+            currentFolderId = id;
+            render();
+        }
+
+        function openFolderModal() { document.getElementById('folderModal').classList.remove('hidden'); }
+        function closeFolderModal() {
+            document.getElementById('folderModal').classList.add('hidden');
+            document.getElementById('folderNameInput').value = '';
+        }
+
+        function handleCreateFolder(event) {
+            event.preventDefault();
+            const name = document.getElementById('folderNameInput').value.trim();
+            if (!name) return;
+            folders.push({ id: Date.now(), name: name, presentations: [] });
+            saveAndRender();
+            closeFolderModal();
+        }
+
+        function deleteFolder(id, event) {
+            event.stopPropagation();
+            if (confirm('Удалить эту папку?')) {
+                folders = folders.filter(f => f.id !== id);
+                if (currentFolderId === id) currentFolderId = null;
+                saveAndRender();
+            }
+        }
+
+        function deletePres(id, event) {
+            event.stopPropagation();
+            if (confirm('Удалить эту презентацию?')) {
+                const folder = folders.find(f => f.id === currentFolderId);
+                if (folder) {
+                    folder.presentations = folder.presentations.filter(p => p.id !== id);
+                    saveAndRender();
+                }
+            }
+        }
+
+        // --- Запуск плеера ---
+        function viewPres(id) {
+            const folder = folders.find(f => f.id === currentFolderId);
+            if (!folder) return;
+
+            currentPresList = folder.presentations;
+            currentPresIndex = currentPresList.findIndex(p => p.id === id);
+
+            showCurrentPresentation();
+            document.getElementById('viewModal').classList.remove('hidden');
+        }
+
+        async function showCurrentPresentation() {
+            if (currentPresList.length === 0) return;
+            const pres = currentPresList[currentPresIndex];
+            const myToken = ++currentRenderToken;
+            currentPdfDoc = null;
+            currentPageNum = 1;
+            totalPagesInFile = 1;
+
+            document.getElementById('viewTitle').textContent = pres.title;
+            document.getElementById('viewDesc').textContent = pres.desc || pres.fileSize;
+            document.getElementById('pageIndicator').textContent = `${currentPresIndex + 1} из ${currentPresList.length}`;
+            document.getElementById('viewDownloadBtn').href = pres.url;
+
+            const container = document.getElementById('viewerContainer');
+            container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-gray-400 text-xs gap-3"><div id="pdfSpinner"></div><span>Загрузка презентации...</span></div>`;
+
+            try {
+                const pdf = await pdfjsLib.getDocument(pres.url).promise;
+                if (myToken !== currentRenderToken) return;
+
+                currentPdfDoc = pdf;
+                totalPagesInFile = pdf.numPages;
+                currentPageNum = 1;
+                updateSlideCounter();
+                await renderPage(myToken);
+            } catch (err) {
+                if (myToken !== currentRenderToken) return;
+                container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center px-6">
+                    <div style="font-size:48px; margin-bottom:12px;">⚠️</div>
+                    <p class="text-white font-semibold text-sm">Не удалось загрузить файл</p>
+                    <p class="text-gray-400 text-xs mt-2">Проверьте, лежит ли Lesson 1_compressed.pdf в корне репозитория</p>
+                </div>`;
+                updateSlideCounter();
+            }
+            flashControls();
+        }
+
+        async function renderPage(myToken) {
+            if (!currentPdfDoc) return;
+            const container = document.getElementById('viewerContainer');
+            const availW = Math.max(container.clientWidth - 24, 50);
+            const availH = Math.max(container.clientHeight - 24, 50);
+
+            const page = await currentPdfDoc.getPage(currentPageNum);
+            if (myToken !== currentRenderToken) return;
+
+            const baseViewport = page.getViewport({ scale: 1 });
+            const dpr = window.devicePixelRatio || 1;
+            const fitScale = Math.min(availW / baseViewport.width, availH / baseViewport.height);
+            const viewport = page.getViewport({ scale: fitScale * dpr });
+
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            canvas.style.width = (viewport.width / dpr) + 'px';
+            canvas.style.height = (viewport.height / dpr) + 'px';
+
+            const ctx = canvas.getContext('2d');
+            await page.render({ canvasContext: ctx, viewport }).promise;
+            if (myToken !== currentRenderToken) return;
+
+            container.innerHTML = '';
+            container.appendChild(canvas);
+            updateSlideCounter();
+        }
+
+        function updateSlideCounter() {
+            const counter = document.getElementById('slideCounter');
+            const prevBtn = document.getElementById('pagePrevBtn');
+            const nextBtn = document.getElementById('pageNextBtn');
+            if (totalPagesInFile <= 1) {
+                counter.style.display = 'none';
+                prevBtn.disabled = true;
+                nextBtn.disabled = true;
+            } else {
+                counter.style.display = '';
+                counter.textContent = `${currentPageNum} / ${totalPagesInFile}`;
+                prevBtn.disabled = currentPageNum <= 1;
+                nextBtn.disabled = currentPageNum >= totalPagesInFile;
+            }
+        }
+
+        function prevPage() {
+            if (totalPagesInFile <= 1 || currentPageNum <= 1) return;
+            currentPageNum--;
+            renderPage(currentRenderToken);
+            flashControls();
+        }
+
+        function nextPage() {
+            if (totalPagesInFile <= 1 || currentPageNum >= totalPagesInFile) return;
+            currentPageNum++;
+            renderPage(currentRenderToken);
+            flashControls();
+        }
+
+        function prevPresInFolder() {
+            if (currentPresList.length <= 1) return;
+            currentPresIndex = (currentPresIndex - 1 + currentPresList.length) % currentPresList.length;
+            showCurrentPresentation();
+        }
+
+        function nextPresInFolder() {
+            if (currentPresList.length <= 1) return;
+            currentPresIndex = (currentPresIndex + 1) % currentPresList.length;
+            showCurrentPresentation();
+        }
+
+        let controlsHideTimer = null;
+        function flashControls() {
+            const wrap = document.getElementById('viewerWrap');
+            wrap.classList.add('controls-visible');
+            clearTimeout(controlsHideTimer);
+            controlsHideTimer = setTimeout(() => wrap.classList.remove('controls-visible'), 2500);
+        }
+        document.getElementById('viewerWrap').addEventListener('mousemove', flashControls);
+        document.getElementById('viewerWrap').addEventListener('touchstart', flashControls, { passive: true });
+        document.getElementById('viewerWrap').addEventListener('click', flashControls);
+
+        function toggleFullscreen() {
+            const box = document.getElementById('playerBox');
+            const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+            if (!isFullscreen) {
+                if (box.requestFullscreen) box.requestFullscreen();
+                else if (box.webkitRequestFullscreen) box.webkitRequestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            }
+        }
+
+        function syncPresentingState() {
+            const box = document.getElementById('playerBox');
+            const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
+            box.classList.toggle('presenting', isFullscreen);
+            if (currentPdfDoc) renderPage(currentRenderToken);
+            flashControls();
+        }
+        document.addEventListener('fullscreenchange', syncPresentingState);
+        document.addEventListener('webkitfullscreenchange', syncPresentingState);
+
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('viewModal').classList.contains('hidden')) return;
+            if (e.key === 'ArrowRight') nextPage();
+            else if (e.key === 'ArrowLeft') prevPage();
+            else if (e.key === 'Escape' && (document.fullscreenElement || document.webkitFullscreenElement)) toggleFullscreen();
+        });
+
+        function closeViewModal() {
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            }
+            document.getElementById('viewModal').classList.add('hidden');
+            document.getElementById('viewerContainer').innerHTML = '';
+            currentPdfDoc = null;
+            currentRenderToken++;
+        }
+
+        function saveAndRender() {
+            try {
+                localStorage.setItem('easytalk_folders', JSON.stringify(folders));
+            } catch(e) {
+                alert('Ошибка сохранения!');
+            }
+            render();
+        }
+
+        // --- Отрисовка интерфейса папок ---
+        function escapeHtml(text) {
+            if (!text) return '';
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.toString().replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function render() {
+            const grid = document.getElementById('mainGrid');
+            const emptyState = document.getElementById('emptyState');
+            const breadcrumbs = document.getElementById('breadcrumbs');
+            const sectionTitle = document.getElementById('sectionTitle');
+            const counterValue = document.getElementById('counterValue');
+
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            if (currentFolderId === null) {
+                sectionTitle.textContent = 'Папки презентаций';
+                counterValue.textContent = folders.length;
+                breadcrumbs.innerHTML = `<span class="font-medium text-gray-800">Все папки</span>`;
+
+                if (folders.length === 0) {
+                    emptyState.classList.remove('hidden');
+                    document.getElementById('emptyTitle').textContent = 'Нет папок';
+                    document.getElementById('emptyDesc').textContent = 'Создайте папку кнопкой выше.';
+                    return;
+                }
+                emptyState.classList.add('hidden');
+
+                folders.forEach(folder => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-2xl p-6 border border-gray-200 hover:shadow-lg transition cursor-pointer flex items-center justify-between group';
+                    card.onclick = () => openFolder(folder.id);
+                    card.innerHTML = `
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-2xl group-hover:bg-brand-600 group-hover:text-white transition">📁</div>
+                            <div>
+                                <h3 class="font-bold text-gray-900 text-lg group-hover:text-brand-600 transition">${escapeHtml(folder.name)}</h3>
+                                <p class="text-xs text-gray-400 mt-0.5">${folder.presentations ? folder.presentations.length : 0} презентаций</p>
+                            </div>
+                        </div>
+                        <button onclick="deleteFolder(${folder.id}, event)" class="p-2 text-gray-400 hover:text-red-500 rounded-lg transition" title="Удалить">🗑️</button>
+                    `;
+                    grid.appendChild(card);
+                });
+                return;
+            }
+
+            const folder = folders.find(f => f.id === currentFolderId);
+            if (!folder) { goHome(); return; }
+
+            sectionTitle.textContent = folder.name;
+            counterValue.textContent = folder.presentations ? folder.presentations.length : 0;
+            breadcrumbs.innerHTML = `
+                <span class="cursor-pointer hover:text-brand-600" onclick="goHome()">Все папки</span>
+                <span class="text-gray-300">/</span>
+                <span class="font-medium text-gray-800">${escapeHtml(folder.name)}</span>
+            `;
+
+            if (!folder.presentations || folder.presentations.length === 0) {
+                emptyState.classList.remove('hidden');
+                document.getElementById('emptyTitle').textContent = 'В этой папке пусто';
+                document.getElementById('emptyDesc').textContent = 'Здесь пока нет презентаций.';
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            folder.presentations.forEach(pres => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-2xl p-5 border border-gray-200 hover:shadow-lg transition flex flex-col justify-between';
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="px-2 py-0.5 bg-brand-50 text-brand-700 text-xs font-semibold rounded-lg">GITHUB PDF</span>
+                            <span class="text-xs text-gray-400">${escapeHtml(pres.date || '')}</span>
+                        </div>
+                        <h3 class="font-bold text-gray-900 text-lg mb-1">${escapeHtml(pres.title)}</h3>
+                        <p class="text-sm text-gray-500 mb-4 line-clamp-2">${escapeHtml(pres.desc || '')}</p>
+                    </div>
+                    <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
+                        <span class="text-xs text-gray-400">${escapeHtml(pres.fileSize || '')}</span>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="viewPres(${pres.id})" class="px-4 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg transition shadow-sm cursor-pointer">Открыть 🚀</button>
+                            <button onclick="deletePres(${pres.id}, event)" class="p-1.5 text-gray-400 hover:text-red-500 rounded-lg transition" title="Удалить">🗑️</button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        render();
+    </script>
+</body>
+</html>
