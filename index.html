@@ -14,6 +14,7 @@
                         brand: {
                             50: '#ecfdf5',
                             100: '#d1fae5',
+                            200: '#a7f3d0',
                             500: '#10b981',
                             600: '#059669',
                             700: '#047857',
@@ -27,17 +28,9 @@
     <!-- PDF.js для отрисовки слайдов в полноэкранном плеере -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .bg-blob {
-            position: fixed;
-            border-radius: 9999px;
-            filter: blur(90px);
-            pointer-events: none;
-            z-index: 0;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #1e293b; }
         :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
 
-        /* Fullscreen player styling */
         #playerBox:fullscreen,
         #playerBox:-webkit-full-screen {
             width: 100vw;
@@ -59,11 +52,10 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Элементы управления плеером */
         .page-nav-btn, .slide-counter, .exit-present-btn {
             position: absolute;
             opacity: 0;
-            transition: opacity 0.25s ease;
+            transition: opacity 0.2s ease;
             z-index: 20;
             pointer-events: none;
         }
@@ -76,10 +68,10 @@
         .page-nav-btn {
             top: 50%;
             transform: translateY(-50%);
-            width: 48px;
-            height: 48px;
+            width: 44px;
+            height: 44px;
             border-radius: 9999px;
-            background: rgba(17,24,39,0.55);
+            background: rgba(17,24,39,0.6);
             color: #fff;
             display: flex;
             align-items: center;
@@ -87,17 +79,17 @@
             border: none;
             cursor: pointer;
         }
-        .page-nav-btn:hover { background: rgba(17,24,39,0.8); }
+        .page-nav-btn:hover { background: rgba(17,24,39,0.9); }
         .page-nav-btn[disabled] { display: none; }
         .slide-counter {
             bottom: 14px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(17,24,39,0.55);
+            background: rgba(17,24,39,0.6);
             color: #fff;
             font-size: 11px;
-            font-weight: 600;
-            padding: 4px 12px;
+            font-weight: 500;
+            padding: 4px 10px;
             border-radius: 9999px;
         }
         .exit-present-btn {
@@ -106,7 +98,7 @@
             width: 36px;
             height: 36px;
             border-radius: 9999px;
-            background: rgba(17,24,39,0.55);
+            background: rgba(17,24,39,0.6);
             color: #fff;
             border: none;
             cursor: pointer;
@@ -120,106 +112,100 @@
         #playerBox.presenting .exit-present-btn { display: flex; align-items: center; justify-content: center; }
 
         #viewerContainer canvas {
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
             border-radius: 4px;
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col relative">
-
-    <div class="bg-blob w-[420px] h-[420px] bg-brand-100 opacity-60 -top-32 -right-40"></div>
-    <div class="bg-blob w-[360px] h-[360px] bg-brand-50 opacity-70 bottom-0 -left-32"></div>
+<body class="min-h-screen flex flex-col">
 
     <!-- Шапка сайта -->
-    <header class="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-30">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative z-10">
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center space-x-3 cursor-pointer" onclick="goHome()">
-                <div class="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center text-white font-bold text-xl shadow-md">E</div>
-                <div class="leading-tight">
-                    <span class="text-xl font-bold tracking-tight text-gray-900 block">Easy<span class="text-brand-600">Talk</span></span>
-                    <span class="text-[11px] font-medium text-brand-600 tracking-wide">курсы английского языка</span>
+                <div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">E</div>
+                <div>
+                    <span class="text-base font-bold text-gray-900 block leading-tight">EasyTalk</span>
+                    <span class="text-[11px] text-brand-700 font-semibold tracking-wide">Платформа учебных материалов</span>
                 </div>
             </div>
         </div>
     </header>
 
     <!-- Основной контент -->
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        <nav id="breadcrumbs" class="flex items-center space-x-2 text-sm text-gray-500 mb-6">
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div class="mb-8">
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Добро пожаловать в EasyTalk! </h1>
+            <p class="text-xs sm:text-sm text-gray-600 mt-1 font-medium">Выберите нужный раздел или воспользуйтесь поиском ниже.</p>
+        </div>
+
+        <nav id="breadcrumbs" class="flex items-center space-x-2 text-sm text-gray-500 mb-4">
             <span class="cursor-pointer hover:text-brand-600 font-medium text-gray-800" onclick="goHome()">Все папки</span>
         </nav>
 
-        <div class="mb-6">
-            <p class="text-xs font-semibold text-brand-600 uppercase tracking-wider mb-1">EasyTalk · курсы английского языка</p>
-            <div class="flex items-center justify-between">
-                <h1 id="sectionTitle" class="text-2xl font-bold text-gray-900">Папки презентаций</h1>
-                <span class="text-sm text-gray-500">Всего: <span id="counterValue" class="font-semibold text-gray-800">0</span></span>
+        <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 id="sectionTitle" class="text-xl font-bold text-gray-900">Папки презентаций</h2>
+                <p class="text-xs text-gray-600 mt-0.5 font-medium">Всего элементов: <span id="counterValue" class="text-brand-700 font-bold">0</span></p>
+            </div>
+
+            <div class="w-full sm:w-64">
+                <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Поиск по материалам..." class="w-full px-3.5 py-2 bg-white border border-gray-300 rounded-xl text-xs focus:outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600 text-gray-800 placeholder-gray-400 shadow-xs">
             </div>
         </div>
 
-        <div id="mainGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        <div id="mainGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
 
-        <div id="emptyState" class="hidden text-center py-16">
-            <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">📂</div>
-            <h3 id="emptyTitle" class="text-lg font-medium text-gray-900 mb-1">Здесь пока пусто</h3>
-            <p id="emptyDesc" class="text-sm text-gray-500 mb-4">В этой папке пока нет презентаций.</p>
+        <div id="emptyState" class="hidden text-center py-12">
+            <h3 class="text-base font-medium text-gray-900 mb-1">Ничего не найдено</h3>
+            <p class="text-xs text-gray-500">Попробуйте изменить запрос в поиске.</p>
         </div>
     </main>
 
     <!-- Футер -->
-    <footer class="bg-white/90 backdrop-blur-sm border-t border-gray-200 py-6 text-center text-sm text-gray-500 relative z-10">
+    <footer class="bg-white border-t border-gray-200 py-4 text-center text-xs text-gray-500">
         <p>&copy; 2026 EasyTalk. Все права защищены.</p>
     </footer>
 
-    <!-- Модальное окно встроенного плеера с кнопкой Показ -->
+    <!-- Модальное окно плеера -->
     <div id="viewModal" class="fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-6 hidden">
-        <div id="playerBox" class="bg-gray-900 rounded-2xl max-w-5xl w-full h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-gray-800">
+        <div id="playerBox" class="bg-gray-900 rounded-2xl max-w-5xl w-full h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-brand-700/50">
             
-            <!-- Шапка плеера -->
-            <div id="playerHeader" class="bg-gray-800 px-6 py-4 flex items-center justify-between border-b border-gray-700">
+            <div id="playerHeader" class="bg-gray-800 px-4 py-3 flex items-center justify-between border-b border-gray-700">
                 <div class="min-w-0">
-                    <h3 id="viewTitle" class="text-base font-bold text-white truncate"></h3>
-                    <p id="viewDesc" class="text-xs text-gray-400 mt-0.5 truncate"></p>
+                    <h3 id="viewTitle" class="text-sm font-bold text-white truncate"></h3>
+                    <p id="viewDesc" class="text-[11px] text-gray-400 truncate"></p>
                 </div>
-                <div class="flex items-center space-x-3 flex-shrink-0">
-                    <button onclick="toggleFullscreen()" class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-xs font-semibold rounded-xl transition inline-flex items-center shadow-sm">
-                        ⛶ Показ
+                <div class="flex items-center space-x-2 flex-shrink-0">
+                    <button onclick="toggleFullscreen()" class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-xs font-medium rounded-lg transition">
+                        Показ
                     </button>
-                    <a id="viewDownloadBtn" download target="_blank" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl transition inline-flex items-center shadow-sm">
-                        Скачать файл 📥
+                    <a id="viewDownloadBtn" download target="_blank" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-medium rounded-lg transition">
+                        Скачать
                     </a>
-                    <button onclick="closeViewModal()" class="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-gray-700 transition">✕</button>
+                    <button onclick="closeViewModal()" class="text-gray-400 hover:text-white px-2 py-1 rounded-lg hover:bg-gray-700 transition">✕</button>
                 </div>
             </div>
 
-            <!-- Область отображения слайда -->
             <div id="viewerWrap" class="flex-grow bg-gray-950 relative flex items-center justify-center overflow-hidden">
                 <div id="viewerContainer" class="w-full h-full flex items-center justify-center p-2"></div>
 
-                <button id="pagePrevBtn" onclick="prevPage()" class="page-nav-btn" style="left:14px;" title="Предыдущий слайд">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
-                </button>
-                <button id="pageNextBtn" onclick="nextPage()" class="page-nav-btn" style="right:14px;" title="Следующий слайд">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
-                </button>
+                <button id="pagePrevBtn" onclick="prevPage()" class="page-nav-btn" style="left:14px;">‹</button>
+                <button id="pageNextBtn" onclick="nextPage()" class="page-nav-btn" style="right:14px;">›</button>
 
                 <div id="slideCounter" class="slide-counter">1 / 1</div>
-                <button id="exitPresentBtn" onclick="toggleFullscreen()" class="exit-present-btn" title="Выйти из показа">✕</button>
+                <button id="exitPresentBtn" onclick="toggleFullscreen()" class="exit-present-btn">✕</button>
             </div>
 
-            <!-- Нижняя панель навигации по папке -->
-            <div id="playerFooterNav" class="bg-gray-800 px-6 py-3 flex items-center justify-between border-t border-gray-700">
-                <div class="text-xs text-gray-400">Навигация по папке</div>
-                <div class="flex items-center space-x-4">
-                    <button onclick="prevPresInFolder()" class="w-10 h-10 rounded-xl bg-gray-700 hover:bg-gray-600 text-white flex items-center justify-center transition shadow-md" title="Предыдущая презентация">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
-                    </button>
-                    <span id="pageIndicator" class="text-xs font-semibold text-gray-300 min-w-[70px] text-center">1 из 1</span>
-                    <button onclick="nextPresInFolder()" class="w-10 h-10 rounded-xl bg-gray-700 hover:bg-gray-600 text-white flex items-center justify-center transition shadow-md" title="Следующая презентация">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
-                    </button>
+            <div id="playerFooterNav" class="bg-gray-800 px-4 py-2.5 flex items-center justify-between border-t border-gray-700">
+                <div class="text-[11px] text-gray-400">EasyTalk Viewer</div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="prevPresInFolder()" class="px-2.5 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white text-xs transition">Назад</button>
+                    <span id="pageIndicator" class="text-xs font-medium text-gray-300 min-w-[50px] text-center">1 из 1</span>
+                    <button onclick="nextPresInFolder()" class="px-2.5 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white text-xs transition">Вперед</button>
                 </div>
-                <div class="text-xs text-gray-400">EasyTalk Viewer</div>
+                <div class="text-[11px] text-gray-400">Презентации</div>
             </div>
 
         </div>
@@ -230,7 +216,6 @@
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         }
 
-        // Список папок и уроков
         const defaultFolders = [
             {
                 id: 1,
@@ -240,7 +225,7 @@
                         id: 101,
                         title: "lesson 1",
                         desc: "Презентация урока",
-                        fileSize: "PDF документ",
+                        fileSize: "PDF",
                         date: "2026",
                         url: "https://raw.githubusercontent.com/aiconnectionmail-hash/EasyTalkK/main/Lesson%201_compressed.pdf"
                     },
@@ -248,7 +233,7 @@
                         id: 103,
                         title: "lesson 3",
                         desc: "Презентация урока",
-                        fileSize: "PDF документ",
+                        fileSize: "PDF",
                         date: "2026",
                         url: "https://raw.githubusercontent.com/aiconnectionmail-hash/EasyTalkK/main/Lesson%203.%20%20Beginner%20_compressed.pdf"
                     }
@@ -262,7 +247,7 @@
                         id: 201,
                         title: "lesson 4",
                         desc: "Презентация урока",
-                        fileSize: "PDF документ",
+                        fileSize: "PDF",
                         date: "2026",
                         url: "https://raw.githubusercontent.com/aiconnectionmail-hash/EasyTalkK/main/Lesson%204.%20Elementary%20_compressed.pdf"
                     }
@@ -272,6 +257,7 @@
 
         let folders = defaultFolders;
         let currentFolderId = null;
+        let searchQuery = "";
         let currentPresList = [];
         let currentPresIndex = 0;
         let currentPdfDoc = null;
@@ -281,20 +267,33 @@
 
         function goHome() {
             currentFolderId = null;
+            document.getElementById('searchInput').value = "";
+            searchQuery = "";
             render();
         }
 
         function openFolder(id) {
             currentFolderId = id;
+            document.getElementById('searchInput').value = "";
+            searchQuery = "";
             render();
         }
 
-        // --- Запуск плеера ---
-        function viewPres(id) {
-            const folder = folders.find(f => f.id === currentFolderId);
-            if (!folder) return;
+        function handleSearch(query) {
+            searchQuery = query.toLowerCase().trim();
+            render();
+        }
 
-            currentPresList = folder.presentations;
+        function viewPres(id) {
+            let list = [];
+            if (currentFolderId === null) {
+                folders.forEach(f => list.push(...f.presentations));
+            } else {
+                const folder = folders.find(f => f.id === currentFolderId);
+                if (folder) list = folder.presentations;
+            }
+
+            currentPresList = list;
             currentPresIndex = currentPresList.findIndex(p => p.id === id);
 
             showCurrentPresentation();
@@ -315,7 +314,7 @@
             document.getElementById('viewDownloadBtn').href = pres.url;
 
             const container = document.getElementById('viewerContainer');
-            container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-gray-400 text-xs gap-3"><div id="pdfSpinner"></div><span>Загрузка презентации...</span></div>`;
+            container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-gray-400 text-xs gap-3"><div id="pdfSpinner"></div><span>Загрузка...</span></div>`;
 
             try {
                 const pdf = await pdfjsLib.getDocument(pres.url).promise;
@@ -329,9 +328,8 @@
             } catch (err) {
                 if (myToken !== currentRenderToken) return;
                 container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center px-6">
-                    <div style="font-size:48px; margin-bottom:12px;">⚠️</div>
-                    <p class="text-white font-semibold text-sm">Не удалось загрузить файл</p>
-                    <p class="text-gray-400 text-xs mt-2">Проверьте название файла и прямую ссылку</p>
+                    <p class="text-white font-medium text-xs">Ошибка загрузки файла</p>
+                    <p class="text-gray-500 text-[11px] mt-1">Проверьте имя файла в репозитории</p>
                 </div>`;
                 updateSlideCounter();
             }
@@ -341,8 +339,8 @@
         async function renderPage(myToken) {
             if (!currentPdfDoc) return;
             const container = document.getElementById('viewerContainer');
-            const availW = Math.max(container.clientWidth - 24, 50);
-            const availH = Math.max(container.clientHeight - 24, 50);
+            const availW = Math.max(container.clientWidth - 20, 50);
+            const availH = Math.max(container.clientHeight - 20, 50);
 
             const page = await currentPdfDoc.getPage(currentPageNum);
             if (myToken !== currentRenderToken) return;
@@ -460,7 +458,6 @@
             currentRenderToken++;
         }
 
-        // --- Отрисовка интерфейса папок ---
         function escapeHtml(text) {
             if (!text) return '';
             const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
@@ -477,6 +474,48 @@
             if (!grid) return;
             grid.innerHTML = '';
 
+            if (currentFolderId === null && searchQuery !== "") {
+                sectionTitle.textContent = 'Результаты поиска';
+                breadcrumbs.innerHTML = `<span class="cursor-pointer hover:text-brand-600 font-medium" onclick="goHome()">Все папки</span> <span class="text-gray-300">/</span> <span class="text-gray-800">${escapeHtml(searchQuery)}</span>`;
+
+                let matched = [];
+                folders.forEach(f => {
+                    f.presentations.forEach(p => {
+                        if (p.title.toLowerCase().includes(searchQuery)) {
+                            matched.push(p);
+                        }
+                    });
+                });
+
+                counterValue.textContent = matched.length;
+                if (matched.length === 0) {
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+                emptyState.classList.add('hidden');
+
+                matched.forEach(pres => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-xl p-4 border border-gray-200 hover:border-brand-500 transition shadow-2xs flex flex-col justify-between';
+                    card.innerHTML = `
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] font-semibold px-2 py-0.5 bg-brand-50 text-brand-700 rounded">PDF</span>
+                                <span class="text-[11px] text-gray-400">${escapeHtml(pres.date || '')}</span>
+                            </div>
+                            <h3 class="font-semibold text-gray-900 text-sm mb-1">${escapeHtml(pres.title)}</h3>
+                            <p class="text-xs text-gray-500 mb-3">${escapeHtml(pres.desc || '')}</p>
+                        </div>
+                        <div class="pt-3 border-t border-gray-100 flex items-center justify-between">
+                            <span class="text-[11px] text-gray-400">${escapeHtml(pres.fileSize || '')}</span>
+                            <button onclick="viewPres(${pres.id})" class="px-3 py-1 bg-brand-600 hover:bg-brand-700 text-white text-xs font-medium rounded-lg transition">Открыть</button>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+                return;
+            }
+
             if (currentFolderId === null) {
                 sectionTitle.textContent = 'Папки презентаций';
                 counterValue.textContent = folders.length;
@@ -489,17 +528,19 @@
                 emptyState.classList.add('hidden');
 
                 folders.forEach(folder => {
+                    const count = folder.presentations ? folder.presentations.length : 0;
                     const card = document.createElement('div');
-                    card.className = 'bg-white rounded-2xl p-6 border border-gray-200 hover:shadow-lg transition cursor-pointer flex items-center justify-between group';
+                    card.className = 'bg-white rounded-xl p-4 border border-gray-200 hover:border-brand-500 transition shadow-2xs cursor-pointer flex items-center justify-between group';
                     card.onclick = () => openFolder(folder.id);
                     card.innerHTML = `
-                        <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-2xl group-hover:bg-brand-600 group-hover:text-white transition">📁</div>
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-base font-semibold group-hover:bg-brand-600 group-hover:text-white transition">📁</div>
                             <div>
-                                <h3 class="font-bold text-gray-900 text-lg group-hover:text-brand-600 transition">${escapeHtml(folder.name)}</h3>
-                                <p class="text-xs text-gray-400 mt-0.5">${folder.presentations ? folder.presentations.length : 0} презентаций</p>
+                                <h3 class="font-semibold text-gray-900 text-sm">${escapeHtml(folder.name)}</h3>
+                                <p class="text-[11px] text-gray-500 mt-0.5">${count} файлов</p>
                             </div>
                         </div>
+                        <span class="text-gray-400 text-sm group-hover:text-brand-600 group-hover:translate-x-1 transition-transform">→</span>
                     `;
                     grid.appendChild(card);
                 });
@@ -510,36 +551,40 @@
             if (!folder) { goHome(); return; }
 
             sectionTitle.textContent = folder.name;
-            counterValue.textContent = folder.presentations ? folder.presentations.length : 0;
             breadcrumbs.innerHTML = `
-                <span class="cursor-pointer hover:text-brand-600" onclick="goHome()">Все папки</span>
+                <span class="cursor-pointer hover:text-brand-600 font-medium" onclick="goHome()">Все папки</span>
                 <span class="text-gray-300">/</span>
-                <span class="font-medium text-gray-800">${escapeHtml(folder.name)}</span>
+                <span class="text-gray-800">${escapeHtml(folder.name)}</span>
             `;
 
-            if (!folder.presentations || folder.presentations.length === 0) {
+            let presentations = folder.presentations || [];
+            if (searchQuery !== "") {
+                presentations = presentations.filter(p => p.title.toLowerCase().includes(searchQuery));
+            }
+
+            counterValue.textContent = presentations.length;
+
+            if (presentations.length === 0) {
                 emptyState.classList.remove('hidden');
                 return;
             }
             emptyState.classList.add('hidden');
 
-            folder.presentations.forEach(pres => {
+            presentations.forEach(pres => {
                 const card = document.createElement('div');
-                card.className = 'bg-white rounded-2xl p-5 border border-gray-200 hover:shadow-lg transition flex flex-col justify-between';
+                card.className = 'bg-white rounded-xl p-4 border border-gray-200 hover:border-brand-500 transition shadow-2xs flex flex-col justify-between';
                 card.innerHTML = `
                     <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="px-2 py-0.5 bg-brand-50 text-brand-700 text-xs font-semibold rounded-lg">GITHUB PDF</span>
-                            <span class="text-xs text-gray-400">${escapeHtml(pres.date || '')}</span>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-semibold px-2 py-0.5 bg-brand-50 text-brand-700 rounded">PDF</span>
+                            <span class="text-[11px] text-gray-400">${escapeHtml(pres.date || '')}</span>
                         </div>
-                        <h3 class="font-bold text-gray-900 text-lg mb-1">${escapeHtml(pres.title)}</h3>
-                        <p class="text-sm text-gray-500 mb-4 line-clamp-2">${escapeHtml(pres.desc || '')}</p>
+                        <h3 class="font-semibold text-gray-900 text-sm mb-1">${escapeHtml(pres.title)}</h3>
+                        <p class="text-xs text-gray-500 mb-3">${escapeHtml(pres.desc || '')}</p>
                     </div>
-                    <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
-                        <span class="text-xs text-gray-400">${escapeHtml(pres.fileSize || '')}</span>
-                        <div class="flex items-center space-x-2">
-                            <button onclick="viewPres(${pres.id})" class="px-4 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg transition shadow-sm cursor-pointer">Открыть 🚀</button>
-                        </div>
+                    <div class="pt-3 border-t border-gray-100 flex items-center justify-between">
+                        <span class="text-[11px] text-gray-400">${escapeHtml(pres.fileSize || '')}</span>
+                        <button onclick="viewPres(${pres.id})" class="px-3 py-1 bg-brand-600 hover:bg-brand-700 text-white text-xs font-medium rounded-lg transition">Открыть</button>
                     </div>
                 `;
                 grid.appendChild(card);
